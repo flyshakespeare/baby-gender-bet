@@ -195,7 +195,7 @@ th:last-child { border-radius: 0 12px 0 0; }
     <h2>📜 下注規則</h2>
     <p>各位貴賓請就位，買定離手！</p>
     <ul>
-      <li><b>每人限下 <span id="max-bets">3</span> 次</b>：想分散風險兩邊押？沒問題！</li>
+      <li><b>每人限下 <span id="rule-max-bets">3</span> 次</b>：想分散風險兩邊押？沒問題！</li>
       <li><b>下注單位</b>：單筆以 <b>100 元為單位</b>（100、200、300...以此類推）。</li>
       <li><b>下好離手</b>：下注後不能修改；同一人可以再押另一邊。</li>
     </ul>
@@ -433,7 +433,7 @@ function render() {
     $(side + "-odds").textContent = o ? "×" + o.toFixed(2) : "—";
   }
   $("total").textContent = fmt(s.total);
-  $("max-bets").textContent = settings.maxBets;
+  $("rule-max-bets").textContent = settings.maxBets;
 
   const resultBox = $("result-box");
   resultBox.innerHTML = "";
