@@ -13,7 +13,7 @@
   --yellow: #ffd93b;
   --red: #e63946;
   --ink: #2b2b2b;
-  --paper: #fffaf0;
+  --paper: #fff7ec;
   --wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
 }
 * { box-sizing: border-box; }
@@ -24,7 +24,7 @@ body {
   font-family: "Microsoft JhengHei", "PingFang TC", "Comic Sans MS", sans-serif;
   color: var(--ink);
   background-color: var(--paper);
-  background-image: radial-gradient(#f0d9a6 1.5px, transparent 1.5px);
+  background-image: radial-gradient(#ffc9dd 1.5px, transparent 1.5px);
   background-size: 22px 22px;
 }
 header { text-align: center; padding: 24px 16px 8px; }
@@ -159,6 +159,28 @@ label.radio {
   background: #fff1f1;
   font-weight: bold;
 }
+
+/* 可愛風互動效果 */
+@keyframes wiggle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+h1 { animation: wiggle 3s ease-in-out infinite; }
+.status { animation: bob 2.4s ease-in-out infinite; }
+.card { transition: transform .2s, box-shadow .2s; }
+.card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+.rules { background: #fff0f7; }
+.rules h2 { color: #d6336c; }
+.rules ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.rules li { position: relative; padding: 6px 0 6px 34px; }
+.rules li::before { content: "⭐"; position: absolute; left: 0; top: 6px; }
+.side { transition: transform .2s; }
+.side:hover { transform: scale(1.03) rotate(-1deg); }
+button { transition: transform .1s, box-shadow .1s; }
+button:hover:not(:disabled) { transform: translateY(-2px); }
+th:first-child { border-radius: 12px 0 0 0; }
+th:last-child { border-radius: 0 12px 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
@@ -169,6 +191,16 @@ label.radio {
 </header>
 
 <main>
+  <section class="card rules">
+    <h2>📜 下注規則</h2>
+    <p>各位貴賓請就位，買定離手！</p>
+    <ul>
+      <li><b>每人限下 <span id="max-bets">3</span> 次</b>：想分散風險兩邊押？沒問題！</li>
+      <li><b>下注單位</b>：單筆以 <b>100 元為單位</b>（100、200、300...以此類推）。</li>
+      <li><b>下好離手</b>：下注後不能修改，只能由管理者刪除；同一人可以再押另一邊。</li>
+    </ul>
+  </section>
+
   <section class="card">
     <h2>📊 目前池子與賠率</h2>
     <div class="odds-grid">
@@ -207,7 +239,6 @@ label.radio {
       <button type="submit">登入</button>
     </form>
     <p id="login-msg" class="msg err"></p>
-    <p class="hint">訪客你好，下好離手! 同一人可以再押另一邊! 一人可以下<span id="max-bets">3</span>次</p>
   </section>
 
   <section class="card" id="admin-panel" hidden>
