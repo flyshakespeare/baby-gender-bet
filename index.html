@@ -207,7 +207,7 @@ label.radio {
       <button type="submit">登入</button>
     </form>
     <p id="login-msg" class="msg err"></p>
-    <p class="hint">未登入只能瀏覽，無法新增或刪除下注。下注後不能修改，只能刪除；同一人可以再押另一邊（仍受 N 次上限）。</p>
+    <p class="hint">訪客你好，下好離手! 同一人可以再押另一邊! 一人可以下<span id="max-bets">3</span>次</p>
   </section>
 
   <section class="card" id="admin-panel" hidden>
@@ -402,6 +402,7 @@ function render() {
     $(side + "-odds").textContent = o ? "×" + o.toFixed(2) : "—";
   }
   $("total").textContent = fmt(s.total);
+  $("max-bets").textContent = settings.maxBets;
 
   const resultBox = $("result-box");
   resultBox.innerHTML = "";
