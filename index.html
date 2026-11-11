@@ -564,13 +564,21 @@ $("logout-btn").addEventListener("click", () => {
 
 /* ===================== 事件：下注 ===================== */
 
+function amountInputProblem() {
+  const raw = $("bet-amount").value.trim();
+  if (raw === "") return "";
+  return isValidAmount(Number(raw)) ? "" : `金額需為 ${MIN_AMOUNT} 元以上、${AMOUNT_STEP} 的倍數（例：100、200、500、1000）`;
+}
+
+$("bet-amount").addEventListener("input", () => $("bet-amount").setCustomValidity(amountInputProblem()));
+
 $("bet-form").addEventListener("submit", e => {
   e.preventDefault();
   if (!isAdmin || !working) return;
   const name = $("bet-name").value.trim();
   const checked = document.querySelector('input[name="side"]:checked');
   const side = checked ? checked.value : null;
-  const amount = Math.floor(Number($("bet-amount").value));
+  const amount = $("bet-amount").value.trim() === "" ? NaN : Number($("bet-amount").value);
   if (working.settings.result) return showMsg("結果已公布，請先按「清除結果」或「🔄 重新開局」");
   if (!working.settings.open) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
   const problem = validateBet(name, side, amount);
