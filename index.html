@@ -104,7 +104,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 .tag.boy { background: var(--boy); }
 .tag.girl { background: var(--girl); }
-tr.editing td { background: #fff7cc; }
 
 button {
   font: inherit;
@@ -208,7 +207,7 @@ label.radio {
       <button type="submit">登入</button>
     </form>
     <p id="login-msg" class="msg err"></p>
-    <p class="hint">未登入只能瀏覽，無法新增、修改或刪除下注。</p>
+    <p class="hint">未登入只能瀏覽，無法新增或刪除下注。下注後不能修改，只能刪除；同一人可以再押另一邊（仍受 N 次上限）。</p>
   </section>
 
   <section class="card" id="admin-panel" hidden>
@@ -225,11 +224,10 @@ label.radio {
         <label class="radio"><input type="radio" name="side" value="boy" required /> 👦 男孩</label>
         <label class="radio"><input type="radio" name="side" value="girl" /> 👧 女孩</label>
       </div>
-      <input type="number" id="bet-amount" min="1" step="1" placeholder="金額（元）" required />
+      <input type="number" id="bet-amount" min="100" step="100" placeholder="金額（100 起，100 的倍數）" required />
       <button type="submit" id="bet-submit">下注</button>
     </form>
     <p id="bet-msg" class="msg"></p>
-    <button type="button" id="bet-cancel" class="blue" hidden>取消修改</button>
 
     <h3>⚙️ 設定</h3>
     <div class="row">
@@ -259,14 +257,16 @@ label.radio {
 // Apps Script 網頁應用程式網址（部署後貼上，步驟見 apps-script/Code.gs）
 const API_URL = "https://script.google.com/macros/s/AKfycbxzQwcg_mmdxNTtv2E06CkRSLO32jjeA-OU0XBP7wiJWyCEHGpv3UXwvORrwn2vmudX/exec";
 const POLL_MS = 30 * 1000;
+const LOAD_RETRY_MAX = 5;
 const MAX_NAME_LEN = 12;
+const MIN_AMOUNT = 100;
+const AMOUNT_STEP = 100;
 const MAX_AMOUNT = 1000000;
 const DEFAULT_SETTINGS = { maxBets: 3, open: true, result: null };
 
 /* ===================== 工具函式 ===================== */
 const $ = id => document.getElementById(id);
 const SIDE = { boy: { label: "男孩 👦", cls: "boy" }, girl: { label: "女孩 👧", cls: "girl" } };
-const OTHER = { boy: "girl", girl: "boy" };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = n => Number(n).toLocaleString("zh-TW");
 const nameKey = n => String(n).trim().toLowerCase();
@@ -290,7 +290,14 @@ async function api(body) {
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(body),
   });
-  const json = await res.json();
+  return readReply(res);
+}
+
+/* Apps Script 同時執行過多時會回傳 HTML 錯誤頁，統一轉成 BUSY 錯誤，讀取時才能自動重試 */
+async function readReply(res) {
+  let json = null;
+  try { json = await res.json(); } catch (_) { json = null; }
+  if (!json) throw Object.assign(new Error("伺服器忙碌，請稍後再試"), { code: "BUSY" });
   if (!json.ok) throw Object.assign(new Error(json.error || "伺服器錯誤"), { code: json.code });
   return json;
 }
@@ -298,8 +305,7 @@ async function api(body) {
 async function fetchData() {
   if (API_URL.startsWith("PASTE_")) throw new Error("尚未設定 API_URL");
   const res = await fetch(API_URL, { cache: "no-store" });
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error || "伺服器錯誤");
+  const json = await readReply(res);
   return sanitizeData(json.data);
 }
 
@@ -351,7 +357,7 @@ function sanitizeData(raw) {
   const bets = raw.bets.map((b, i) => {
     const ok = b && typeof b.name === "string" && b.name.trim().length >= 1 && b.name.trim().length <= MAX_NAME_LEN
       && (b.side === "boy" || b.side === "girl")
-      && Number.isInteger(b.amount) && b.amount > 0 && b.amount <= MAX_AMOUNT
+      && isValidAmount(b.amount)
       && Number.isFinite(b.createdAt);
     if (!ok) throw new Error("第 " + (i + 1) + " 筆下注格式錯誤");
     return { id: typeof b.id === "string" && b.id ? b.id : newId(), name: b.name.trim(), side: b.side, amount: b.amount, createdAt: b.createdAt };
@@ -366,7 +372,6 @@ let published = { settings: Object.assign({}, DEFAULT_SETTINGS), bets: [] };
 let working = null;
 let token = sessionStorage.getItem("baby-token");
 let isAdmin = !!token;
-let editingId = null;
 let saving = false;
 let savePending = false;
 let saveFailed = false;
@@ -424,13 +429,13 @@ function render() {
   const sorted = [...bets].sort((a, b) => b.createdAt - a.createdAt);
   $("tbody").innerHTML = sorted.map(b => {
     const value = settings.result ? s.payout[b.id] : s.estimate[b.id];
-    return `<tr class="${b.id === editingId ? "editing" : ""}">
+    return `<tr>
     <td>${esc(b.name)}</td>
     <td><span class="tag ${SIDE[b.side].cls}">${SIDE[b.side].label}</span></td>
     <td class="num">${fmt(b.amount)}</td>
     <td>${esc(fmtTime(b.createdAt))}</td>
     <td class="num">${value ? fmt(value) : "—"}</td>
-    ${isAdmin ? `<td><button type="button" class="blue small" data-action="edit" data-id="${esc(b.id)}">修改</button> <button type="button" class="danger small" data-action="delete" data-id="${esc(b.id)}">刪除</button></td>` : ""}
+    ${isAdmin ? `<td><button type="button" class="danger small" data-action="delete" data-id="${esc(b.id)}">刪除</button></td>` : ""}
   </tr>`;
   }).join("");
   $("empty").hidden = bets.length > 0;
@@ -443,38 +448,19 @@ function render() {
   }
 }
 
-/* ===================== 管理者編輯 ===================== */
-function validateBet(name, side, amount, excludeId) {
+/* ===================== 管理者操作 ===================== */
+function isValidAmount(amount) {
+  return Number.isInteger(amount) && amount >= MIN_AMOUNT && amount <= MAX_AMOUNT && amount % AMOUNT_STEP === 0;
+}
+
+function validateBet(name, side, amount) {
   const { bets, settings } = working;
   if (!name || name.length > MAX_NAME_LEN) return `姓名 / 暱稱需為 1～${MAX_NAME_LEN} 字`;
   if (!side) return "請選擇猜測的性別";
-  if (!Number.isInteger(amount) || amount <= 0 || amount > MAX_AMOUNT) return `金額需為 1～${fmt(MAX_AMOUNT)} 的整數`;
-  const mine = bets.filter(b => b.id !== excludeId && nameKey(b.name) === nameKey(name));
-  if (mine.some(b => b.side !== side)) return `「${name}」已押${SIDE[OTHER[side]].label}，不能換邊`;
+  if (!isValidAmount(amount)) return `金額需為 ${MIN_AMOUNT} 元以上、${AMOUNT_STEP} 的倍數（例：100、200、500、1000）`;
+  const mine = bets.filter(b => nameKey(b.name) === nameKey(name));
   if (mine.length >= settings.maxBets) return `「${name}」已達下注上限 ${settings.maxBets} 次`;
   return null;
-}
-
-function startEdit(bet) {
-  editingId = bet.id;
-  $("bet-name").value = bet.name;
-  document.querySelector(`input[name="side"][value="${bet.side}"]`).checked = true;
-  $("bet-amount").value = bet.amount;
-  $("bet-title").textContent = "✏️ 修改下注";
-  $("bet-submit").textContent = "儲存修改";
-  $("bet-cancel").hidden = false;
-  showMsg("");
-  $("admin-panel").scrollIntoView({ behavior: "smooth" });
-  render();
-}
-
-function cancelEdit() {
-  editingId = null;
-  $("bet-form").reset();
-  $("bet-title").textContent = "➕ 新增下注";
-  $("bet-submit").textContent = "下注";
-  $("bet-cancel").hidden = true;
-  render();
 }
 
 function mutate(fn) {
@@ -522,15 +508,26 @@ function expireSession(msg) {
   savePending = false;
   saveFailed = false;
   $("login-msg").textContent = msg;
-  cancelEdit();
 }
 
 /* ===================== 載入資料（所有人可讀，定時更新） ===================== */
+let loadRetries = 0;
+let retryTimer = null;
 async function loadPublished() {
   try {
     published = await fetchData();
+    loadRetries = 0;
+    clearTimeout(retryTimer);
   } catch (err) {
-    $("status").textContent = "⚠️ 資料載入失敗：" + err.message;
+    if (loadRetries < LOAD_RETRY_MAX) {
+      loadRetries++;
+      $("status").textContent = "⚠️ 伺服器忙碌，自動重試中…";
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(loadPublished, 2000 + Math.random() * 4000);
+    } else {
+      loadRetries = 0;
+      $("status").textContent = "⚠️ 資料載入失敗：" + err.message;
+    }
     return;
   }
   if (isAdmin && !working) working = clone(published);
@@ -546,7 +543,7 @@ $("login-form").addEventListener("submit", async e => {
   $("admin-pw").value = "";
   try {
     const res = await api({ action: "login", password });
-    await loadPublished();
+    published = await fetchData();
     token = res.token;
     sessionStorage.setItem("baby-token", token);
     isAdmin = true;
@@ -566,7 +563,6 @@ $("logout-btn").addEventListener("click", () => {
 });
 
 /* ===================== 事件：下注 ===================== */
-$("bet-cancel").addEventListener("click", cancelEdit);
 
 $("bet-form").addEventListener("submit", e => {
   e.preventDefault();
@@ -575,27 +571,14 @@ $("bet-form").addEventListener("submit", e => {
   const checked = document.querySelector('input[name="side"]:checked');
   const side = checked ? checked.value : null;
   const amount = Math.floor(Number($("bet-amount").value));
-  const editId = editingId;
-
-  if (!editId) {
-    if (working.settings.result) return showMsg("結果已公布，請先按「清除結果」或「🔄 重新開局」");
-    if (!working.settings.open) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
-  }
-  const problem = validateBet(name, side, amount, editId);
+  if (working.settings.result) return showMsg("結果已公布，請先按「清除結果」或「🔄 重新開局」");
+  if (!working.settings.open) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
+  const problem = validateBet(name, side, amount);
   if (problem) return showMsg(problem);
 
-  if (editId) {
-    mutate(w => {
-      const bet = w.bets.find(b => b.id === editId);
-      if (bet) Object.assign(bet, { name, side, amount });
-    });
-    cancelEdit();
-    showMsg("✅ 已修改下注", true);
-  } else {
-    mutate(w => w.bets.push({ id: newId(), name, side, amount, createdAt: Date.now() }));
-    $("bet-amount").value = "";
-    showMsg(`✅ ${name} 下注 ${SIDE[side].label} ${fmt(amount)} 元`, true);
-  }
+  mutate(w => w.bets.push({ id: newId(), name, side, amount, createdAt: Date.now() }));
+  $("bet-amount").value = "";
+  showMsg(`✅ ${name} 下注 ${SIDE[side].label} ${fmt(amount)} 元`, true);
 });
 
 $("tbody").addEventListener("click", e => {
@@ -603,11 +586,8 @@ $("tbody").addEventListener("click", e => {
   if (!btn || !isAdmin || !working) return;
   const bet = working.bets.find(b => b.id === btn.dataset.id);
   if (!bet) return;
-  if (btn.dataset.action === "edit") {
-    startEdit(bet);
-  } else if (btn.dataset.action === "delete") {
+  if (btn.dataset.action === "delete") {
     if (!confirm(`確定刪除 ${bet.name} 的下注（${fmt(bet.amount)} 元）？`)) return;
-    if (editingId === bet.id) cancelEdit();
     mutate(w => { w.bets = w.bets.filter(b => b.id !== bet.id); });
   }
 });
@@ -634,13 +614,11 @@ $("res-clear").addEventListener("click", () => setResult(null));
 
 $("clear-all").addEventListener("click", () => {
   if (!confirm("確定要清空所有下注紀錄？此動作無法復原。")) return;
-  cancelEdit();
   mutate(w => { w.bets = []; });
 });
 
 $("reset-round").addEventListener("click", () => {
   if (!confirm("確定要重新開局？會清空所有下注、清除已公布的結果，並重新開盤。")) return;
-  cancelEdit();
   mutate(w => { w.bets = []; w.settings.result = null; w.settings.open = true; });
 });
 
