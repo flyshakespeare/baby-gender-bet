@@ -350,10 +350,11 @@ function summarize(bets, result) {
 // 驗證匯入的資料結構，避免惡意或錯誤格式的內容進入畫面
 function sanitizeData(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.bets)) throw new Error("格式錯誤：缺少 bets 陣列");
+  const s = raw.settings && typeof raw.settings === "object" ? raw.settings : {};
   const settings = Object.assign({}, DEFAULT_SETTINGS);
-  if (Number.isInteger(raw.maxBets) && raw.maxBets >= 1 && raw.maxBets <= 50) settings.maxBets = raw.maxBets;
-  if (typeof raw.open === "boolean") settings.open = raw.open;
-  if (raw.result === "boy" || raw.result === "girl") settings.result = raw.result;
+  if (Number.isInteger(s.maxBets) && s.maxBets >= 1 && s.maxBets <= 50) settings.maxBets = s.maxBets;
+  if (typeof s.open === "boolean") settings.open = s.open;
+  if (s.result === "boy" || s.result === "girl") settings.result = s.result;
   const bets = raw.bets.map((b, i) => {
     const ok = b && typeof b.name === "string" && b.name.trim().length >= 1 && b.name.trim().length <= MAX_NAME_LEN
       && (b.side === "boy" || b.side === "girl")
