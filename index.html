@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; form-action 'none'; base-uri 'self'" />
+<meta name="referrer" content="no-referrer" />
+<title>🍼 寶寶性別大猜猜</title>
+<style>
+:root {
+  --boy: #4aa3ff;
+  --girl: #ff7eb6;
+  --yellow: #ffd93b;
+  --red: #e63946;
+  --ink: #2b2b2b;
+  --paper: #fffaf0;
+  --wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Microsoft JhengHei", "PingFang TC", "Comic Sans MS", sans-serif;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: radial-gradient(#f0d9a6 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+header { text-align: center; padding: 24px 16px 8px; }
+h1 {
+  display: inline-block;
+  margin: 0;
+  font-size: clamp(28px, 5vw, 44px);
+  color: var(--red);
+  text-shadow: 3px 3px 0 var(--yellow), 5px 5px 0 var(--ink);
+  transform: rotate(-2deg);
+}
+.status {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 6px 18px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: var(--wobble);
+  font-weight: bold;
+}
+main { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 22px; }
+.card {
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: var(--wobble);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 18px 22px;
+}
+.card h2 { margin: 0 0 12px; font-size: 22px; }
+.card h3 { margin: 18px 0 8px; font-size: 17px; }
+.hint { color: #6b5b3e; font-size: 14px; margin: 10px 0 0; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+
+.odds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.side {
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 4px 4px 0 var(--ink);
+  text-shadow: 2px 2px 0 var(--ink);
+}
+.side.boy { background: var(--boy); }
+.side.girl { background: var(--girl); }
+.side .title { font-size: 22px; font-weight: bold; }
+.side .big { font-size: 38px; font-weight: bold; margin-top: 4px; }
+.side .odds {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 16px;
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--ink);
+  text-shadow: none;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  transform: rotate(-3deg);
+}
+@media (max-width: 640px) { .odds-grid { grid-template-columns: 1fr; } }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+th, td { padding: 10px 8px; text-align: left; border-bottom: 2px dashed #d9c9a3; }
+th { background: var(--yellow); border-bottom: 3px solid var(--ink); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+}
+.tag.boy { background: var(--boy); }
+.tag.girl { background: var(--girl); }
+tr.editing td { background: #fff7cc; }
+
+button {
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 8px 16px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+button.danger { background: var(--red); color: #fff; }
+button.boyBtn { background: var(--boy); color: #fff; }
+button.girlBtn { background: var(--girl); color: #fff; }
+button.blue { background: #8ecbff; }
+button.small { padding: 4px 10px; font-size: 14px; }
+input[type=text], input[type=password], input[type=number] {
+  font: inherit;
+  padding: 8px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  width: 100%;
+  background: #fff;
+}
+label.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+  font-weight: bold;
+  cursor: pointer;
+}
+.grid-form {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.2fr auto;
+  gap: 10px;
+  align-items: center;
+}
+@media (max-width: 640px) { .grid-form { grid-template-columns: 1fr; } }
+.msg { font-weight: bold; min-height: 1.4em; }
+.msg.ok { color: #1f8a3b; }
+.msg.err { color: var(--red); }
+.result-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 3px dashed var(--red);
+  border-radius: 16px;
+  background: #fff1f1;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍼 寶寶性別大猜猜 🍼</h1><br />
+  <span id="status" class="status">載入中…</span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>📊 目前池子與賠率</h2>
+    <div class="odds-grid">
+      <div class="side boy">
+        <div class="title">👦 男孩</div>
+        <div class="big"><span id="boy-pool">0</span> 元</div>
+        <div><span id="boy-count">0</span> 人下注</div>
+        <div class="odds" id="boy-odds">—</div>
+      </div>
+      <div class="side girl">
+        <div class="title">👧 女孩</div>
+        <div class="big"><span id="girl-pool">0</span> 元</div>
+        <div><span id="girl-count">0</span> 人下注</div>
+        <div class="odds" id="girl-odds">—</div>
+      </div>
+    </div>
+    <p class="hint">總池 <b id="total">0</b> 元 ・ 賠率 = 總池 ÷ 該邊金額 ・ 不收退水</p>
+    <div id="result-box"></div>
+  </section>
+
+  <section class="card">
+    <h2>📝 下注名單</h2>
+    <div class="table-wrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p id="empty" class="hint" hidden>還沒有人下注喔～</p>
+  </section>
+
+  <section class="card" id="login-panel">
+    <h2>🔐 管理者登入</h2>
+    <form id="login-form" class="row">
+      <input type="password" id="admin-pw" placeholder="管理者密碼" autocomplete="current-password" required />
+      <button type="submit">登入</button>
+    </form>
+    <p id="login-msg" class="msg err"></p>
+    <p class="hint">未登入只能瀏覽，無法新增、修改或刪除下注。</p>
+  </section>
+
+  <section class="card" id="admin-panel" hidden>
+    <div class="row between">
+      <h2>🛠️ 管理者面板</h2>
+      <button type="button" id="logout-btn">登出</button>
+    </div>
+    <p id="save-status" class="hint"></p>
+
+    <h3 id="bet-title">➕ 新增下注</h3>
+    <form id="bet-form" class="grid-form">
+      <input type="text" id="bet-name" maxlength="12" placeholder="姓名 / 暱稱" required />
+      <div class="row">
+        <label class="radio"><input type="radio" name="side" value="boy" required /> 👦 男孩</label>
+        <label class="radio"><input type="radio" name="side" value="girl" /> 👧 女孩</label>
+      </div>
+      <input type="number" id="bet-amount" min="1" step="1" placeholder="金額（元）" required />
+      <button type="submit" id="bet-submit">下注</button>
+    </form>
+    <p id="bet-msg" class="msg"></p>
+    <button type="button" id="bet-cancel" class="blue" hidden>取消修改</button>
+
+    <h3>⚙️ 設定</h3>
+    <div class="row">
+      <label>每人最多下注次數 N
+        <input type="number" id="max-bets" min="1" max="50" step="1" style="width:100px" />
+      </label>
+      <button type="button" id="save-max">套用 N</button>
+      <button type="button" id="toggle-open">切換封盤</button>
+    </div>
+
+    <h3>🏁 公布結果</h3>
+    <div class="row">
+      <button type="button" class="boyBtn" id="res-boy">公布：男孩 👦</button>
+      <button type="button" class="girlBtn" id="res-girl">公布：女孩 👧</button>
+      <button type="button" id="res-clear">清除結果</button>
+      <button type="button" class="danger" id="clear-all">清空所有下注</button>
+    </div>
+    <div class="row">
+      <button type="button" class="danger" id="reset-round">🔄 重新開局（清空下注、清除結果、開盤）</button>
+    </div>
+
+  </section>
+</main>
+
+<script>
+/* ===================== 設定區 ===================== */
+// Apps Script 網頁應用程式網址（部署後貼上，步驟見 apps-script/Code.gs）
+const API_URL = "PASTE_APPS_SCRIPT_URL_HERE";
+const POLL_MS = 30 * 1000;
+const MAX_NAME_LEN = 12;
+const MAX_AMOUNT = 1000000;
+const DEFAULT_SETTINGS = { maxBets: 3, open: true, result: null };
+
+/* ===================== 工具函式 ===================== */
+const $ = id => document.getElementById(id);
+const SIDE = { boy: { label: "男孩 👦", cls: "boy" }, girl: { label: "女孩 👧", cls: "girl" } };
+const OTHER = { boy: "girl", girl: "boy" };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => Number(n).toLocaleString("zh-TW");
+const nameKey = n => String(n).trim().toLowerCase();
+// 下注時間固定以 UTC+8（台北時間）顯示，不受瀏覽器時區影響
+const fmtTime = ts => {
+  const d = new Date(ts + 8 * 3600 * 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}/${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+};
+const newId = () => "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const showMsg = (text, ok = false) => {
+  $("bet-msg").textContent = text;
+  $("bet-msg").className = "msg " + (ok ? "ok" : "err");
+};
+
+/* 呼叫後端：用 text/plain 傳送 POST，可避開 CORS 預檢請求；密碼驗證與權限都在伺服器端 */
+async function api(body) {
+  if (API_URL.startsWith("PASTE_")) throw new Error("尚未設定 API_URL");
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.ok) throw Object.assign(new Error(json.error || "伺服器錯誤"), { code: json.code });
+  return json;
+}
+
+async function fetchData() {
+  if (API_URL.startsWith("PASTE_")) throw new Error("尚未設定 API_URL");
+  const res = await fetch(API_URL, { cache: "no-store" });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "伺服器錯誤");
+  return sanitizeData(json.data);
+}
+
+function summarize(bets, result) {
+  const pool = { boy: 0, girl: 0 };
+  bets.forEach(b => { pool[b.side] += b.amount; });
+  const total = pool.boy + pool.girl;
+  const odds = s => (pool[s] > 0 ? total / pool[s] : null);
+
+  // 每筆下注若猜中可得的金額（即時預估，會隨後續下注變動）
+  const estimate = {};
+  bets.forEach(b => { estimate[b.id] = Math.round(b.amount * total / pool[b.side]); });
+
+  // 公布後的派彩：按下注比例分配總池，用最大餘額法取整數，確保加總等於總池
+  const payout = {};
+  const byPerson = [];
+  if (result && pool[result] > 0) {
+    const winners = bets.filter(b => b.side === result);
+    const shares = winners.map((b, i) => {
+      const exact = b.amount * total / pool[result];
+      return { id: b.id, floor: Math.floor(exact), frac: exact - Math.floor(exact), i };
+    });
+    let rest = total - shares.reduce((sum, x) => sum + x.floor, 0);
+    [...shares].sort((a, b) => b.frac - a.frac || a.i - b.i).forEach(x => {
+      if (rest > 0) { x.floor += 1; rest--; }
+    });
+    shares.forEach(x => { payout[x.id] = x.floor; });
+
+    const people = new Map();
+    winners.forEach(b => {
+      const key = nameKey(b.name);
+      const p = people.get(key) || { name: b.name, amount: 0, payout: 0 };
+      p.amount += b.amount;
+      p.payout += payout[b.id];
+      people.set(key, p);
+    });
+    byPerson.push(...[...people.values()].sort((a, b) => b.payout - a.payout));
+  }
+  return { pool, total, odds, estimate, payout, byPerson };
+}
+
+// 驗證匯入的資料結構，避免惡意或錯誤格式的內容進入畫面
+function sanitizeData(raw) {
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.bets)) throw new Error("格式錯誤：缺少 bets 陣列");
+  const settings = Object.assign({}, DEFAULT_SETTINGS);
+  if (Number.isInteger(raw.maxBets) && raw.maxBets >= 1 && raw.maxBets <= 50) settings.maxBets = raw.maxBets;
+  if (typeof raw.open === "boolean") settings.open = raw.open;
+  if (raw.result === "boy" || raw.result === "girl") settings.result = raw.result;
+  const bets = raw.bets.map((b, i) => {
+    const ok = b && typeof b.name === "string" && b.name.trim().length >= 1 && b.name.trim().length <= MAX_NAME_LEN
+      && (b.side === "boy" || b.side === "girl")
+      && Number.isInteger(b.amount) && b.amount > 0 && b.amount <= MAX_AMOUNT
+      && Number.isFinite(b.createdAt);
+    if (!ok) throw new Error("第 " + (i + 1) + " 筆下注格式錯誤");
+    return { id: typeof b.id === "string" && b.id ? b.id : newId(), name: b.name.trim(), side: b.side, amount: b.amount, createdAt: b.createdAt };
+  });
+  return { settings, bets };
+}
+
+/* ===================== 狀態 ===================== */
+// published：伺服器上的最新資料（所有人看到的）
+// working：管理者編輯中的副本，每次修改都會自動儲存到伺服器
+let published = { settings: Object.assign({}, DEFAULT_SETTINGS), bets: [] };
+let working = null;
+let token = sessionStorage.getItem("baby-token");
+let isAdmin = !!token;
+let editingId = null;
+let saving = false;
+let savePending = false;
+let saveFailed = false;
+
+const clone = obj => JSON.parse(JSON.stringify(obj));
+const view = () => (isAdmin && working) ? working : published;
+
+function setSaveStatus(text, isError = false) {
+  $("save-status").textContent = text;
+  $("save-status").className = isError ? "msg err" : "hint";
+}
+
+/* ===================== 畫面 ===================== */
+function render() {
+  const { bets, settings } = view();
+  const s = summarize(bets, settings.result);
+
+  $("status").textContent = settings.result
+    ? "🎉 已公布：" + SIDE[settings.result].label
+    : settings.open ? "🍼 下注中" : "🔒 已封盤";
+
+  for (const side of ["boy", "girl"]) {
+    const bettors = new Set(bets.filter(b => b.side === side).map(b => nameKey(b.name))).size;
+    const o = s.odds(side);
+    $(side + "-pool").textContent = fmt(s.pool[side]);
+    $(side + "-count").textContent = bettors;
+    $(side + "-odds").textContent = o ? "×" + o.toFixed(2) : "—";
+  }
+  $("total").textContent = fmt(s.total);
+
+  const resultBox = $("result-box");
+  resultBox.innerHTML = "";
+  if (settings.result) {
+    const div = document.createElement("div");
+    div.className = "result-box";
+    if (s.byPerson.length) {
+      const rows = s.byPerson.map(p => `<tr><td>${esc(p.name)}</td><td class="num">${fmt(p.amount)}</td><td class="num">${fmt(p.payout)}</td></tr>`).join("");
+      div.innerHTML = `<p>猜中 ${s.byPerson.length} 人，總池 ${fmt(s.total)} 元依下注比例派彩（不收退水）</p>
+        <div class="table-wrap"><table class="winners">
+          <thead><tr><th>姓名 / 暱稱</th><th class="num">猜中下注（元）</th><th class="num">可拿（元）</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    } else {
+      div.textContent = "無人猜中，本次無派彩";
+    }
+    resultBox.appendChild(div);
+  }
+
+  $("thead").innerHTML = `<tr>
+    <th>姓名 / 暱稱</th><th>猜測</th><th class="num">金額（元）</th><th>下注時間</th>
+    <th class="num">${settings.result ? "派彩（元）" : "若猜中可得（即時）"}</th>
+    ${isAdmin ? `<th>操作</th>` : ""}
+  </tr>`;
+
+  const sorted = [...bets].sort((a, b) => b.createdAt - a.createdAt);
+  $("tbody").innerHTML = sorted.map(b => {
+    const value = settings.result ? s.payout[b.id] : s.estimate[b.id];
+    return `<tr class="${b.id === editingId ? "editing" : ""}">
+    <td>${esc(b.name)}</td>
+    <td><span class="tag ${SIDE[b.side].cls}">${SIDE[b.side].label}</span></td>
+    <td class="num">${fmt(b.amount)}</td>
+    <td>${esc(fmtTime(b.createdAt))}</td>
+    <td class="num">${value ? fmt(value) : "—"}</td>
+    ${isAdmin ? `<td><button type="button" class="blue small" data-action="edit" data-id="${esc(b.id)}">修改</button> <button type="button" class="danger small" data-action="delete" data-id="${esc(b.id)}">刪除</button></td>` : ""}
+  </tr>`;
+  }).join("");
+  $("empty").hidden = bets.length > 0;
+
+  $("login-panel").hidden = isAdmin;
+  $("admin-panel").hidden = !isAdmin;
+  if (isAdmin) {
+    if (document.activeElement !== $("max-bets")) $("max-bets").value = settings.maxBets;
+    $("toggle-open").textContent = settings.open ? "🔒 封盤" : "🔓 開盤";
+  }
+}
+
+/* ===================== 管理者編輯 ===================== */
+function validateBet(name, side, amount, excludeId) {
+  const { bets, settings } = working;
+  if (!name || name.length > MAX_NAME_LEN) return `姓名 / 暱稱需為 1～${MAX_NAME_LEN} 字`;
+  if (!side) return "請選擇猜測的性別";
+  if (!Number.isInteger(amount) || amount <= 0 || amount > MAX_AMOUNT) return `金額需為 1～${fmt(MAX_AMOUNT)} 的整數`;
+  const mine = bets.filter(b => b.id !== excludeId && nameKey(b.name) === nameKey(name));
+  if (mine.some(b => b.side !== side)) return `「${name}」已押${SIDE[OTHER[side]].label}，不能換邊`;
+  if (mine.length >= settings.maxBets) return `「${name}」已達下注上限 ${settings.maxBets} 次`;
+  return null;
+}
+
+function startEdit(bet) {
+  editingId = bet.id;
+  $("bet-name").value = bet.name;
+  document.querySelector(`input[name="side"][value="${bet.side}"]`).checked = true;
+  $("bet-amount").value = bet.amount;
+  $("bet-title").textContent = "✏️ 修改下注";
+  $("bet-submit").textContent = "儲存修改";
+  $("bet-cancel").hidden = false;
+  showMsg("");
+  $("admin-panel").scrollIntoView({ behavior: "smooth" });
+  render();
+}
+
+function cancelEdit() {
+  editingId = null;
+  $("bet-form").reset();
+  $("bet-title").textContent = "➕ 新增下注";
+  $("bet-submit").textContent = "下注";
+  $("bet-cancel").hidden = true;
+  render();
+}
+
+function mutate(fn) {
+  fn(working);
+  render();
+  queueSave();
+}
+
+// 自動儲存：同一時間只送一個請求；儲存中若又有修改，等這次結束後送最新狀態
+function queueSave() {
+  savePending = true;
+  if (!saving) pumpSave();
+}
+
+async function pumpSave() {
+  saving = true;
+  setSaveStatus("💾 儲存中…");
+  while (savePending && isAdmin) {
+    savePending = false;
+    try {
+      const res = await api({ action: "save", token, data: clone(working) });
+      published = sanitizeData(res.data);
+      saveFailed = false;
+    } catch (err) {
+      if (err.code === "AUTH") {
+        expireSession("登入已過期，請重新登入");
+        break;
+      }
+      saveFailed = true;
+      setSaveStatus("⚠️ 儲存失敗：" + err.message + "（5 秒後自動重試）", true);
+      setTimeout(() => { if (isAdmin && saveFailed) queueSave(); }, 5000);
+      break;
+    }
+  }
+  saving = false;
+  if (isAdmin && !saveFailed) setSaveStatus("✅ 已自動儲存到伺服器");
+  render();
+}
+
+function expireSession(msg) {
+  token = null;
+  sessionStorage.removeItem("baby-token");
+  isAdmin = false;
+  working = null;
+  savePending = false;
+  saveFailed = false;
+  $("login-msg").textContent = msg;
+  cancelEdit();
+}
+
+/* ===================== 載入資料（所有人可讀，定時更新） ===================== */
+async function loadPublished() {
+  try {
+    published = await fetchData();
+  } catch (err) {
+    $("status").textContent = "⚠️ 資料載入失敗：" + err.message;
+    return;
+  }
+  if (isAdmin && !working) working = clone(published);
+  render();
+}
+
+/* ===================== 事件：登入 ===================== */
+// 密碼驗證與失敗鎖定都在伺服器端，前端只負責顯示結果
+$("login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("login-msg").textContent = "驗證中…";
+  const password = $("admin-pw").value;
+  $("admin-pw").value = "";
+  try {
+    const res = await api({ action: "login", password });
+    await loadPublished();
+    token = res.token;
+    sessionStorage.setItem("baby-token", token);
+    isAdmin = true;
+    working = clone(published);
+    $("login-msg").textContent = "";
+    render();
+  } catch (err) {
+    $("login-msg").textContent = err.message;
+  }
+});
+
+$("logout-btn").addEventListener("click", () => {
+  if ((saving || savePending) && !confirm("還有修改尚未儲存完成，確定登出？")) return;
+  const old = token;
+  if (old) api({ action: "logout", token: old }).catch(() => {});
+  expireSession("");
+});
+
+/* ===================== 事件：下注 ===================== */
+$("bet-cancel").addEventListener("click", cancelEdit);
+
+$("bet-form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!isAdmin || !working) return;
+  const name = $("bet-name").value.trim();
+  const checked = document.querySelector('input[name="side"]:checked');
+  const side = checked ? checked.value : null;
+  const amount = Math.floor(Number($("bet-amount").value));
+  const editId = editingId;
+
+  if (!editId) {
+    if (working.settings.result) return showMsg("結果已公布，請先按「清除結果」或「🔄 重新開局」");
+    if (!working.settings.open) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
+  }
+  const problem = validateBet(name, side, amount, editId);
+  if (problem) return showMsg(problem);
+
+  if (editId) {
+    mutate(w => {
+      const bet = w.bets.find(b => b.id === editId);
+      if (bet) Object.assign(bet, { name, side, amount });
+    });
+    cancelEdit();
+    showMsg("✅ 已修改下注", true);
+  } else {
+    mutate(w => w.bets.push({ id: newId(), name, side, amount, createdAt: Date.now() }));
+    $("bet-amount").value = "";
+    showMsg(`✅ ${name} 下注 ${SIDE[side].label} ${fmt(amount)} 元`, true);
+  }
+});
+
+$("tbody").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn || !isAdmin || !working) return;
+  const bet = working.bets.find(b => b.id === btn.dataset.id);
+  if (!bet) return;
+  if (btn.dataset.action === "edit") {
+    startEdit(bet);
+  } else if (btn.dataset.action === "delete") {
+    if (!confirm(`確定刪除 ${bet.name} 的下注（${fmt(bet.amount)} 元）？`)) return;
+    if (editingId === bet.id) cancelEdit();
+    mutate(w => { w.bets = w.bets.filter(b => b.id !== bet.id); });
+  }
+});
+
+/* ===================== 事件：設定與結果 ===================== */
+$("save-max").addEventListener("click", () => {
+  const n = Math.floor(Number($("max-bets").value));
+  if (!(n >= 1 && n <= 50)) return alert("N 需為 1～50 的整數");
+  mutate(w => { w.settings.maxBets = n; });
+});
+
+$("toggle-open").addEventListener("click", () => {
+  mutate(w => { w.settings.open = !w.settings.open; });
+});
+
+function setResult(result) {
+  const label = result ? SIDE[result].label : "清除";
+  if (!confirm(`確定要${result ? "公布結果為 " + label : "清除已公布的結果"}？`)) return;
+  mutate(w => { w.settings.result = result; });
+}
+$("res-boy").addEventListener("click", () => setResult("boy"));
+$("res-girl").addEventListener("click", () => setResult("girl"));
+$("res-clear").addEventListener("click", () => setResult(null));
+
+$("clear-all").addEventListener("click", () => {
+  if (!confirm("確定要清空所有下注紀錄？此動作無法復原。")) return;
+  cancelEdit();
+  mutate(w => { w.bets = []; });
+});
+
+$("reset-round").addEventListener("click", () => {
+  if (!confirm("確定要重新開局？會清空所有下注、清除已公布的結果，並重新開盤。")) return;
+  cancelEdit();
+  mutate(w => { w.bets = []; w.settings.result = null; w.settings.open = true; });
+});
+
+/* ===================== 啟動 ===================== */
+window.addEventListener("beforeunload", e => {
+  if (saving || savePending) { e.preventDefault(); e.returnValue = ""; }
+});
+
+async function start() {
+  await loadPublished();
+  if (token) {
+    try {
+      await api({ action: "check", token });
+    } catch (err) {
+      if (err.code === "AUTH") expireSession("登入已過期，請重新登入");
+    }
+  }
+  render();
+}
+
+start();
+setInterval(loadPublished, POLL_MS);
+</script>
+</body>
+</html>
