@@ -348,7 +348,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         <label class="radio"><input type="radio" name="side" value="boy" required /> 👦 男孩</label>
         <label class="radio"><input type="radio" name="side" value="girl" /> 👧 女孩</label>
       </div>
-      <input type="number" id="bet-amount" min="100" step="100" placeholder="金額（100 起，100 的倍數）" required />
+      <input type="number" id="bet-amount" min="100" max="1000000" step="100" placeholder="金額（100 起，100 的倍數）" required />
       <button type="submit" id="bet-submit">下注</button>
     </form>
     <p id="bet-msg" class="msg"></p>
@@ -497,11 +497,13 @@ function summarize(bets, result) {
   if (result && pool[result] > 0) {
     const winners = bets.filter(b => b.side === result);
     const shares = winners.map((b, i) => {
-      const exact = b.amount * total / pool[result];
-      return { id: b.id, floor: Math.floor(exact), frac: exact - Math.floor(exact), i };
+      // 用整數運算（最大約 3×10^14，仍在安全整數範圍），餘數相同時才會正確依下注先後分配
+      const num = b.amount * total;
+      const rem = num % pool[result];
+      return { id: b.id, floor: (num - rem) / pool[result], rem, i };
     });
     let rest = total - shares.reduce((sum, x) => sum + x.floor, 0);
-    [...shares].sort((a, b) => b.frac - a.frac || a.i - b.i).forEach(x => {
+    [...shares].sort((a, b) => b.rem - a.rem || a.i - b.i).forEach(x => {
       if (rest > 0) { x.floor += 1; rest--; }
     });
     shares.forEach(x => { payout[x.id] = x.floor; });
@@ -698,12 +700,13 @@ function tickLoop() {
 function isValidAmount(amount) {
   return Number.isInteger(amount) && amount >= MIN_AMOUNT && amount <= MAX_AMOUNT && amount % AMOUNT_STEP === 0;
 }
+const AMOUNT_RULE = `金額需為 ${fmt(MIN_AMOUNT)}～${fmt(MAX_AMOUNT)} 元、${AMOUNT_STEP} 的倍數（例：100、200、500、1000）`;
 
 function validateBet(name, side, amount) {
   const { bets, settings } = working;
   if (!name || name.length > MAX_NAME_LEN) return `姓名 / 暱稱需為 1～${MAX_NAME_LEN} 字`;
   if (!side) return "請選擇猜測的性別";
-  if (!isValidAmount(amount)) return `金額需為 ${MIN_AMOUNT} 元以上、${AMOUNT_STEP} 的倍數（例：100、200、500、1000）`;
+  if (!isValidAmount(amount)) return AMOUNT_RULE;
   const mine = bets.filter(b => nameKey(b.name) === nameKey(name));
   if (mine.length >= settings.maxBets) return `「${name}」已達下注上限 ${settings.maxBets} 次`;
   return null;
@@ -843,7 +846,7 @@ $("logout-btn").addEventListener("click", () => {
 function amountInputProblem() {
   const raw = $("bet-amount").value.trim();
   if (raw === "") return "";
-  return isValidAmount(Number(raw)) ? "" : `金額需為 ${MIN_AMOUNT} 元以上、${AMOUNT_STEP} 的倍數（例：100、200、500、1000）`;
+  return isValidAmount(Number(raw)) ? "" : AMOUNT_RULE;
 }
 
 $("bet-amount").addEventListener("input", () => $("bet-amount").setCustomValidity(amountInputProblem()));
