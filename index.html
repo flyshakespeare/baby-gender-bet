@@ -89,7 +89,8 @@ main { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 22px
 @media (max-width: 640px) { .odds-grid { grid-template-columns: 1fr; } }
 
 .table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 520px; }
+table { width: 100%; border-collapse: collapse; }
+.bets-table { min-width: 520px; }
 th, td { padding: 10px 8px; text-align: left; border-bottom: 2px dashed #d9c9a3; }
 th { background: var(--yellow); border-bottom: 3px solid var(--ink); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -122,7 +123,8 @@ button.boyBtn { background: var(--boy); color: #fff; }
 button.girlBtn { background: var(--girl); color: #fff; }
 button.blue { background: #8ecbff; }
 button.small { padding: 4px 10px; font-size: 14px; }
-input[type=text], input[type=password], input[type=number] {
+button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--ink); }
+input[type=text], input[type=password], input[type=number], input[type=datetime-local] {
   font: inherit;
   padding: 8px 10px;
   border: 3px solid var(--ink);
@@ -166,24 +168,113 @@ label.radio {
 h1 { animation: wiggle 3s ease-in-out infinite; }
 .status { animation: bob 2.4s ease-in-out infinite; }
 .card { transition: transform .2s, box-shadow .2s; }
-.card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+@media (hover: hover) { .card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); } }
 .rules { background: #fff0f7; }
 .rules h2 { color: #d6336c; }
 .rules ul { list-style: none; margin: 8px 0 0; padding: 0; }
 .rules li { position: relative; padding: 6px 0 6px 34px; }
 .rules li::before { content: "⭐"; position: absolute; left: 0; top: 6px; }
 .side { transition: transform .2s; }
-.side:hover { transform: scale(1.03) rotate(-1deg); }
+@media (hover: hover) { .side:hover { transform: scale(1.03) rotate(-1deg); } }
 button { transition: transform .1s, box-shadow .1s; }
-button:hover:not(:disabled) { transform: translateY(-2px); }
+@media (hover: hover) { button:hover:not(:disabled) { transform: translateY(-2px); } }
 th:first-child { border-radius: 12px 0 0 0; }
 th:last-child { border-radius: 0 12px 0 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 封盤倒數列：固定在畫面最上方 */
+.countdown {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 12px;
+  padding: 8px 12px;
+  background: var(--ink);
+  color: #fff;
+  border-bottom: 4px solid var(--yellow);
+  text-align: center;
+  font-weight: bold;
+}
+.countdown b { font-size: 28px; color: var(--yellow); font-variant-numeric: tabular-nums; }
+.countdown b:empty, .countdown-sub:empty { display: none; }
+.countdown-sub { flex-basis: 100%; font-size: 13px; font-weight: normal; opacity: .85; }
+.countdown.urgent { background: var(--red); }
+.countdown.urgent b { color: #fff; animation: blink 1s ease-in-out infinite; }
+.countdown.closed { background: #555; }
+@keyframes blink { 50% { opacity: .55; } }
+
+/* 管理者設定 */
+.settings { display: grid; gap: 16px; }
+.setting > label { display: block; margin-bottom: 6px; font-weight: bold; }
+.setting .row input { flex: 1 1 180px; width: auto; min-width: 0; }
+.setting .row input[type=number] { flex: 0 1 120px; }
+.setting .hint { margin-top: 6px; }
+input[type=datetime-local] { min-height: 44px; }
+input:disabled { background: #eee; cursor: not-allowed; }
+label.radio:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+
+/* 下注名單平常收起，點標題列展開 */
+details.card > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary h2 { margin: 0; }
+details.card > summary::after {
+  content: "展開 ▼";
+  flex: none;
+  padding: 4px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--yellow);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 14px;
+  font-weight: bold;
+}
+details.card[open] > summary { margin-bottom: 12px; }
+details.card[open] > summary::after { content: "收起 ▲"; }
+details.card > summary:focus-visible { outline: 3px solid var(--boy); outline-offset: 4px; }
+
+/* 手機版：縮小間距，下注名單改成一筆一張卡片，不用左右捲動 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+@media (max-width: 640px) {
+  header { padding: 16px 12px 4px; }
+  main { padding: 12px; gap: 16px; }
+  .card { padding: 14px 16px; box-shadow: 4px 4px 0 var(--ink); }
+  .side .big { font-size: 30px; }
+  .side .odds { font-size: 24px; }
+  .countdown b { font-size: 24px; }
+  button { min-height: 42px; }
+  .winners th, .winners td { padding: 8px 4px; font-size: 14px; }
+  .bets-table { min-width: 0; }
+  .bets-table thead { display: none; }
+  .bets-table, .bets-table tbody, .bets-table tr, .bets-table td { display: block; width: 100%; }
+  .bets-table tr { margin-bottom: 12px; padding: 6px 12px; border: 3px solid var(--ink); border-radius: 14px; background: #fffdf7; }
+  .bets-table td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 0; text-align: right; }
+  .bets-table td::before { content: attr(data-label); flex: none; font-weight: bold; color: #6b5b3e; text-align: left; }
+}
+@media (max-width: 480px) {
+  h1 { font-size: 26px; }
+}
 </style>
 </head>
 <body>
+
+<div id="countdown" class="countdown" role="timer" hidden>
+  <span id="countdown-label"></span>
+  <b id="countdown-time"></b>
+  <span id="countdown-sub" class="countdown-sub"></span>
+</div>
 
 <header>
   <h1>🍼 寶寶性別大猜猜 🍼</h1><br />
@@ -195,9 +286,10 @@ th:last-child { border-radius: 0 12px 0 0; }
     <h2>📜 下注規則</h2>
     <p>各位貴賓請就位，買定離手！</p>
     <ul>
-      <li><b>每人限下 <span id="rule-max-bets">3</span> 次</b>：想分散風險兩邊押？沒問題！</li>
+      <li><b>每人限下 <span id="rule-max-bets">2</span> 次</b>：想分散風險兩邊押？沒問題！</li>
       <li><b>下注單位</b>：單筆以 <b>100 元為單位</b>（100、200、300...以此類推）。</li>
       <li><b>下好離手</b>：下注後不能修改；同一人可以再押另一邊。</li>
+      <li><b>封盤倒數</b>：畫面最上方會倒數，時間一到就封盤，不能再下注；封盤後名單也不能刪除。</li>
     </ul>
   </section>
 
@@ -221,16 +313,16 @@ th:last-child { border-radius: 0 12px 0 0; }
     <div id="result-box"></div>
   </section>
 
-  <section class="card">
-    <h2>📝 下注名單</h2>
+  <details class="card" id="bets-card">
+    <summary><h2>📝 下注名單（<span id="bet-count">0</span> 筆）</h2></summary>
     <div class="table-wrap">
-      <table>
+      <table class="bets-table">
         <thead id="thead"></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
     <p id="empty" class="hint" hidden>還沒有人下注喔～</p>
-  </section>
+  </details>
 
   <section class="card" id="login-panel">
     <h2>🔐 管理者登入</h2>
@@ -249,6 +341,7 @@ th:last-child { border-radius: 0 12px 0 0; }
     <p id="save-status" class="hint"></p>
 
     <h3 id="bet-title">➕ 新增下注</h3>
+    <p id="lock-note" class="msg err" hidden></p>
     <form id="bet-form" class="grid-form">
       <input type="text" id="bet-name" maxlength="12" placeholder="姓名 / 暱稱" required />
       <div class="row">
@@ -261,12 +354,27 @@ th:last-child { border-radius: 0 12px 0 0; }
     <p id="bet-msg" class="msg"></p>
 
     <h3>⚙️ 設定</h3>
-    <div class="row">
-      <label>每人最多下注次數 N
-        <input type="number" id="max-bets" min="1" max="50" step="1" style="width:100px" />
-      </label>
-      <button type="button" id="save-max">套用 N</button>
-      <button type="button" id="toggle-open">切換封盤</button>
+    <div class="settings">
+      <div class="setting">
+        <label for="max-bets">每人最多下注次數 N</label>
+        <div class="row">
+          <input type="number" id="max-bets" min="1" max="50" step="1" />
+          <button type="button" id="save-max">套用 N</button>
+        </div>
+      </div>
+      <div class="setting">
+        <label for="close-at">封盤時間（台北時間）</label>
+        <div class="row">
+          <input type="datetime-local" id="close-at" />
+          <button type="button" id="save-close">設定封盤時間</button>
+          <button type="button" id="clear-close">清除</button>
+        </div>
+        <p class="hint">時間一到自動封盤，畫面最上方會倒數；封盤後不能新增或刪除下注，需要時可再按「開盤」。</p>
+      </div>
+      <div class="setting">
+        <button type="button" id="toggle-open">🔒 封盤</button>
+      </div>
+      <p id="backend-warn" class="msg err" hidden>⚠️ 伺服器端程式尚未更新：請把 apps-script/Code.gs 重新部署，否則封盤時間與「封盤後不可刪除」都不會生效。</p>
     </div>
 
     <h3>🏁 公布結果</h3>
@@ -293,7 +401,9 @@ const MAX_NAME_LEN = 12;
 const MIN_AMOUNT = 100;
 const AMOUNT_STEP = 100;
 const MAX_AMOUNT = 1000000;
-const DEFAULT_SETTINGS = { maxBets: 3, open: true, result: null };
+const MAX_CLOSE_AT = 4102444800000; // 2100-01-01，擋掉不合理的時間值
+const TAIPEI_OFFSET_MS = 8 * 3600 * 1000;
+const DEFAULT_SETTINGS = { maxBets: 2, open: true, closeAt: null, result: null };
 
 /* ===================== 工具函式 ===================== */
 const $ = id => document.getElementById(id);
@@ -303,15 +413,44 @@ const fmt = n => Number(n).toLocaleString("zh-TW");
 const nameKey = n => String(n).trim().toLowerCase();
 // 下注時間固定以 UTC+8（台北時間）顯示，不受瀏覽器時區影響
 const fmtTime = ts => {
-  const d = new Date(ts + 8 * 3600 * 1000);
+  const d = new Date(ts + TAIPEI_OFFSET_MS);
   const p = n => String(n).padStart(2, "0");
   return `${d.getUTCFullYear()}/${p(d.getUTCMonth() + 1)}/${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+};
+const fmtMinute = ts => fmtTime(ts).slice(0, 16);
+// datetime-local 的值（YYYY-MM-DDTHH:mm）一律視為台北時間，和下注時間的顯示方式一致
+const toTaipeiInput = ts => new Date(ts + TAIPEI_OFFSET_MS).toISOString().slice(0, 16);
+const fromTaipeiInput = value => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1, 6).map(Number);
+  return Date.UTC(y, mo - 1, d, h, mi) - TAIPEI_OFFSET_MS;
+};
+const fmtCountdown = ms => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const p = n => String(n).padStart(2, "0");
+  const days = Math.floor(total / 86400);
+  const clock = `${p(Math.floor(total % 86400 / 3600))}:${p(Math.floor(total % 3600 / 60))}:${p(total % 60)}`;
+  return days ? `${days} 天 ${clock}` : clock;
 };
 const newId = () => "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const showMsg = (text, ok = false) => {
   $("bet-msg").textContent = text;
   $("bet-msg").className = "msg " + (ok ? "ok" : "err");
 };
+
+// 以伺服器時間為準的時鐘：即使手機時間不準，倒數與封盤判斷也和伺服器一致
+let clockOffset = 0;
+let backendReady = null; // 後端是否已更新（有回傳 serverTime）；null 代表還不知道
+const serverNow = () => Math.round(Date.now() + clockOffset);
+function syncClock(serverTime, sentAt) {
+  backendReady = Number.isFinite(serverTime);
+  const received = Date.now();
+  if (!backendReady || received - sentAt > 10000) return;
+  clockOffset = serverTime - (sentAt + received) / 2;
+}
+// 手動封盤，或已到封盤時間，都算封盤
+const isClosed = (settings, t = serverNow()) => !settings.open || (settings.closeAt !== null && t >= settings.closeAt);
 
 /* 呼叫後端：用 text/plain 傳送 POST，可避開 CORS 預檢請求；密碼驗證與權限都在伺服器端 */
 async function api(body) {
@@ -335,8 +474,10 @@ async function readReply(res) {
 
 async function fetchData() {
   if (API_URL.startsWith("PASTE_")) throw new Error("尚未設定 API_URL");
+  const sentAt = Date.now();
   const res = await fetch(API_URL, { cache: "no-store" });
   const json = await readReply(res);
+  syncClock(json.serverTime, sentAt);
   return sanitizeData(json.data);
 }
 
@@ -384,6 +525,7 @@ function sanitizeData(raw) {
   const s = raw.settings && typeof raw.settings === "object" ? raw.settings : {};
   const settings = Object.assign({}, DEFAULT_SETTINGS);
   if (Number.isInteger(s.maxBets) && s.maxBets >= 1 && s.maxBets <= 50) settings.maxBets = s.maxBets;
+  if (Number.isSafeInteger(s.closeAt) && s.closeAt > 0 && s.closeAt <= MAX_CLOSE_AT) settings.closeAt = s.closeAt;
   if (typeof s.open === "boolean") settings.open = s.open;
   if (s.result === "boy" || s.result === "girl") settings.result = s.result;
   const bets = raw.bets.map((b, i) => {
@@ -407,6 +549,9 @@ let isAdmin = !!token;
 let saving = false;
 let savePending = false;
 let saveFailed = false;
+let closeDirty = false;    // 封盤時間輸入框已修改、但還沒按「設定封盤時間」
+let renderedClosed = null; // 畫面目前對應的封盤狀態，用來偵測倒數歸零
+let loaded = false;        // 第一次載入資料完成前，不更新倒數列
 
 const clone = obj => JSON.parse(JSON.stringify(obj));
 const view = () => (isAdmin && working) ? working : published;
@@ -419,11 +564,14 @@ function setSaveStatus(text, isError = false) {
 /* ===================== 畫面 ===================== */
 function render() {
   const { bets, settings } = view();
+  const t = serverNow();
+  const closed = isClosed(settings, t);
+  renderedClosed = closed;
   const s = summarize(bets, settings.result);
 
   $("status").textContent = settings.result
     ? "🎉 已公布：" + SIDE[settings.result].label
-    : settings.open ? "🍼 下注中" : "🔒 已封盤";
+    : closed ? "🔒 已封盤" : "🍼 下注中";
 
   for (const side of ["boy", "girl"]) {
     const bettors = new Set(bets.filter(b => b.side === side).map(b => nameKey(b.name))).size;
@@ -453,32 +601,97 @@ function render() {
     resultBox.appendChild(div);
   }
 
+  const valueLabel = settings.result ? "派彩（元）" : "若猜中可得（即時）";
   $("thead").innerHTML = `<tr>
     <th>姓名 / 暱稱</th><th>猜測</th><th class="num">金額（元）</th><th>下注時間</th>
-    <th class="num">${settings.result ? "派彩（元）" : "若猜中可得（即時）"}</th>
+    <th class="num">${valueLabel}</th>
     ${isAdmin ? `<th>操作</th>` : ""}
   </tr>`;
 
   const sorted = [...bets].sort((a, b) => b.createdAt - a.createdAt);
   $("tbody").innerHTML = sorted.map(b => {
     const value = settings.result ? s.payout[b.id] : s.estimate[b.id];
+    const delBtn = closed
+      ? `<button type="button" class="danger small" disabled title="已封盤，不能刪除">🔒 已封盤</button>`
+      : `<button type="button" class="danger small" data-action="delete" data-id="${esc(b.id)}">刪除</button>`;
     return `<tr>
-    <td>${esc(b.name)}</td>
-    <td><span class="tag ${SIDE[b.side].cls}">${SIDE[b.side].label}</span></td>
-    <td class="num">${fmt(b.amount)}</td>
-    <td>${esc(fmtTime(b.createdAt))}</td>
-    <td class="num">${value ? fmt(value) : "—"}</td>
-    ${isAdmin ? `<td><button type="button" class="danger small" data-action="delete" data-id="${esc(b.id)}">刪除</button></td>` : ""}
+    <td data-label="姓名 / 暱稱">${esc(b.name)}</td>
+    <td data-label="猜測"><span class="tag ${SIDE[b.side].cls}">${SIDE[b.side].label}</span></td>
+    <td class="num" data-label="金額（元）">${fmt(b.amount)}</td>
+    <td data-label="下注時間">${esc(fmtTime(b.createdAt))}</td>
+    <td class="num" data-label="${valueLabel}">${value ? fmt(value) : "—"}</td>
+    ${isAdmin ? `<td data-label="操作">${delBtn}</td>` : ""}
   </tr>`;
   }).join("");
   $("empty").hidden = bets.length > 0;
+  $("bet-count").textContent = bets.length;
 
   $("login-panel").hidden = isAdmin;
   $("admin-panel").hidden = !isAdmin;
   if (isAdmin) {
     if (document.activeElement !== $("max-bets")) $("max-bets").value = settings.maxBets;
-    $("toggle-open").textContent = settings.open ? "🔒 封盤" : "🔓 開盤";
+    if (!closeDirty && document.activeElement !== $("close-at")) {
+      $("close-at").value = settings.closeAt === null ? "" : toTaipeiInput(settings.closeAt);
+    }
+    $("clear-close").disabled = settings.closeAt === null;
+    $("toggle-open").textContent = closed ? "🔓 開盤" : "🔒 封盤";
+    $("backend-warn").hidden = backendReady !== false;
+
+    // 封盤後不能新增或刪除；結果公布後不能再新增
+    const locked = closed || !!settings.result;
+    $("bet-form").querySelectorAll("input, button").forEach(el => { el.disabled = locked; });
+    $("clear-all").disabled = closed;
+    $("reset-round").disabled = closed;
+    $("lock-note").hidden = !locked;
+    $("lock-note").textContent = closed
+      ? "🔒 已封盤：不能新增或刪除下注，需要異動請先按「🔓 開盤」。"
+      : "🎉 結果已公布：不能新增下注，請先「清除結果」或「重新開局」。";
   }
+  renderBar(settings, closed, t);
+}
+
+// 畫面最上方的封盤倒數列
+function renderBar(settings, closed, t) {
+  const bar = $("countdown");
+  const hasDeadline = settings.closeAt !== null;
+  if (settings.result || (!closed && !hasDeadline)) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  if (closed) {
+    bar.className = "countdown closed";
+    $("countdown-label").textContent = "🔒 已封盤";
+    $("countdown-time").textContent = "";
+    $("countdown-sub").textContent = hasDeadline && t >= settings.closeAt ? "封盤時間 " + fmtMinute(settings.closeAt) + "（台北時間）" : "";
+    return;
+  }
+  const remaining = settings.closeAt - t;
+  bar.className = remaining <= 60 * 1000 ? "countdown urgent" : "countdown";
+  $("countdown-label").textContent = "⏳ 距離封盤";
+  $("countdown-time").textContent = fmtCountdown(remaining);
+  $("countdown-sub").textContent = "封盤時間 " + fmtMinute(settings.closeAt) + "（台北時間）";
+}
+
+// 每秒更新倒數；倒數歸零時整個畫面要重畫（鎖定新增與刪除）
+function tick() {
+  if (!loaded) return;
+  const { settings } = view();
+  const t = serverNow();
+  const closed = isClosed(settings, t);
+  if (closed === renderedClosed) {
+    renderBar(settings, closed, t);
+    return;
+  }
+  const byDeadline = renderedClosed === false && settings.closeAt !== null && t >= settings.closeAt;
+  render();
+  // 隨機延遲後重新載入一次，讓大家看到封盤前最後的金額，又避免所有人同時請求
+  if (byDeadline) setTimeout(loadPublished, 500 + Math.random() * 5000);
+}
+
+function tickLoop() {
+  tick();
+  setTimeout(tickLoop, 1000 - (serverNow() % 1000) + 20);
 }
 
 /* ===================== 管理者操作 ===================== */
@@ -496,6 +709,13 @@ function validateBet(name, side, amount) {
   return null;
 }
 
+// 封盤後不能新增或刪除下注（伺服器端也會擋）。confirm 視窗開著時時間仍在走，所以確認後要再檢查一次
+function ensureOpen() {
+  if (working && !isClosed(working.settings)) return true;
+  showMsg("已封盤，不能新增或刪除下注；需要異動請先按「🔓 開盤」");
+  return false;
+}
+
 function mutate(fn) {
   fn(working);
   render();
@@ -511,15 +731,23 @@ function queueSave() {
 async function pumpSave() {
   saving = true;
   setSaveStatus("💾 儲存中…");
+  let rejected = "";
   while (savePending && isAdmin) {
     savePending = false;
     try {
+      const sentAt = Date.now();
       const res = await api({ action: "save", token, data: clone(working) });
+      syncClock(res.serverTime, sentAt);
       published = sanitizeData(res.data);
       saveFailed = false;
     } catch (err) {
       if (err.code === "AUTH") {
         expireSession("登入已過期，請重新登入");
+        break;
+      }
+      if (err.code === "CLOSED" || err.code === "LIMIT") {
+        rejected = err.message;
+        await discardLocalChanges();
         break;
       }
       saveFailed = true;
@@ -529,8 +757,22 @@ async function pumpSave() {
     }
   }
   saving = false;
-  if (isAdmin && !saveFailed) setSaveStatus("✅ 已自動儲存到伺服器");
+  if (rejected) {
+    showMsg(rejected);
+    setSaveStatus("⚠️ " + rejected + "（這次修改沒有儲存，已還原為伺服器上的資料）", true);
+  } else if (isAdmin && !saveFailed) {
+    setSaveStatus("✅ 已自動儲存到伺服器");
+  }
   render();
+}
+
+// 伺服器拒絕這次修改（例如已封盤）時，放棄本機未儲存的變更，改用伺服器上的資料
+async function discardLocalChanges() {
+  try {
+    published = await fetchData();
+  } catch (_) { /* 抓不到就沿用上次伺服器回傳的資料，之後輪詢會再更新 */ }
+  working = clone(published);
+  savePending = false;
 }
 
 function expireSession(msg) {
@@ -563,6 +805,7 @@ async function loadPublished() {
     }
     return;
   }
+  loaded = true;
   if (isAdmin && !working) working = clone(published);
   render();
 }
@@ -613,11 +856,11 @@ $("bet-form").addEventListener("submit", e => {
   const side = checked ? checked.value : null;
   const amount = $("bet-amount").value.trim() === "" ? NaN : Number($("bet-amount").value);
   if (working.settings.result) return showMsg("結果已公布，請先按「清除結果」或「🔄 重新開局」");
-  if (!working.settings.open) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
+  if (isClosed(working.settings)) return showMsg("目前已封盤，請先按「🔓 開盤」再新增下注");
   const problem = validateBet(name, side, amount);
   if (problem) return showMsg(problem);
 
-  mutate(w => w.bets.push({ id: newId(), name, side, amount, createdAt: Date.now() }));
+  mutate(w => w.bets.push({ id: newId(), name, side, amount, createdAt: serverNow() }));
   $("bet-amount").value = "";
   showMsg(`✅ ${name} 下注 ${SIDE[side].label} ${fmt(amount)} 元`, true);
 });
@@ -628,7 +871,9 @@ $("tbody").addEventListener("click", e => {
   const bet = working.bets.find(b => b.id === btn.dataset.id);
   if (!bet) return;
   if (btn.dataset.action === "delete") {
+    if (!ensureOpen()) return;
     if (!confirm(`確定刪除 ${bet.name} 的下注（${fmt(bet.amount)} 元）？`)) return;
+    if (!ensureOpen()) return;
     mutate(w => { w.bets = w.bets.filter(b => b.id !== bet.id); });
   }
 });
@@ -640,26 +885,60 @@ $("save-max").addEventListener("click", () => {
   mutate(w => { w.settings.maxBets = n; });
 });
 
+$("close-at").addEventListener("input", () => { closeDirty = true; });
+
+$("save-close").addEventListener("click", () => {
+  const ts = fromTaipeiInput($("close-at").value);
+  if (ts === null) return alert("請先選擇封盤時間");
+  if (ts <= serverNow()) return alert("封盤時間要晚於現在；想立刻封盤請按「🔒 封盤」");
+  if (ts > MAX_CLOSE_AT) return alert("封盤時間太遠了，請重新選擇");
+  closeDirty = false;
+  mutate(w => { w.settings.closeAt = ts; });
+});
+
+$("clear-close").addEventListener("click", () => {
+  closeDirty = false;
+  mutate(w => { w.settings.closeAt = null; });
+});
+
 $("toggle-open").addEventListener("click", () => {
-  mutate(w => { w.settings.open = !w.settings.open; });
+  if (!working) return;
+  showMsg("");
+  if (!isClosed(working.settings)) {
+    mutate(w => { w.settings.open = false; });
+    return;
+  }
+  if (!confirm("確定要重新開盤？開盤後可以新增或刪除下注。")) return;
+  mutate(w => {
+    w.settings.open = true;
+    // 已過期的封盤時間一併清除，否則開盤後會立刻又封盤
+    if (w.settings.closeAt !== null && w.settings.closeAt <= serverNow()) w.settings.closeAt = null;
+  });
 });
 
 function setResult(result) {
   const label = result ? SIDE[result].label : "清除";
-  if (!confirm(`確定要${result ? "公布結果為 " + label : "清除已公布的結果"}？`)) return;
-  mutate(w => { w.settings.result = result; });
+  if (!confirm(`確定要${result ? "公布結果為 " + label + "（公布後會自動封盤）" : "清除已公布的結果"}？`)) return;
+  mutate(w => {
+    w.settings.result = result;
+    if (result) w.settings.open = false;
+  });
 }
 $("res-boy").addEventListener("click", () => setResult("boy"));
 $("res-girl").addEventListener("click", () => setResult("girl"));
 $("res-clear").addEventListener("click", () => setResult(null));
 
 $("clear-all").addEventListener("click", () => {
+  if (!ensureOpen()) return;
   if (!confirm("確定要清空所有下注紀錄？此動作無法復原。")) return;
+  if (!ensureOpen()) return;
   mutate(w => { w.bets = []; });
 });
 
 $("reset-round").addEventListener("click", () => {
+  if (!ensureOpen()) return;
   if (!confirm("確定要重新開局？會清空所有下注、清除已公布的結果，並重新開盤。")) return;
+  if (!ensureOpen()) return;
   mutate(w => { w.bets = []; w.settings.result = null; w.settings.open = true; });
 });
 
@@ -682,6 +961,8 @@ async function start() {
 
 start();
 setInterval(loadPublished, POLL_MS);
+tickLoop();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 </script>
 </body>
 </html>
